@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 SKIP_DIRS = {
@@ -31,11 +32,14 @@ def scan_folder(folder):
     if not folder.is_dir():
         return []
     result = []
-    for path in folder.rglob("*"):
-        if any(part in SKIP_DIRS for part in path.parts):
-            continue
-        if path.is_file():
-            result.append(path)
+    for root, dirs, files in os.walk(folder, followlinks=False):
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+        base = Path(root)
+        for name in files:
+            candidate = base / name
+            if candidate.is_symlink():
+                continue
+            result.append(candidate)
     return sorted(result)
 
 

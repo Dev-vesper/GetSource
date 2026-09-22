@@ -148,3 +148,4 @@ def write_markdown(entries, output_path):
     data = build_markdown(entries)
     Path(output_path).write_text(data, encoding="utf-8")
     return data
+
