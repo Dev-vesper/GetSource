@@ -84,3 +84,4 @@ def test_write_markdown(tmp_path):
     saved = out.read_text(encoding="utf-8")
     assert saved.startswith("### `a.py`")
     assert "````python" in saved
+

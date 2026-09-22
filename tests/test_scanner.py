@@ -48,3 +48,4 @@ def test_scan_folder_returns_empty_for_file(tmp_path):
     f = tmp_path / "a.py"
     f.write_text("a")
     assert scan_folder(f) == []
+
