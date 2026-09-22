@@ -27,7 +27,7 @@ Source Collector is a PyQt desktop application that lets you browse your filesys
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Dev-vesper/GetSource.git
 cd GetSource
 ```
 
@@ -93,12 +93,6 @@ python3 main.py
 6. Repeat for as many folders as you need.
 7. Use **Remove Selected** or **Clear** to adjust the list.
 8. Click **Export Markdown** and choose where to save the output `.md` file.
-
-The exported Markdown contains one code block per file, with the file path as the language tag:
-
-```src/main.py
-<file content>
-```
 
 ---
 
