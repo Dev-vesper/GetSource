@@ -32,6 +32,18 @@ def test_scan_folder_recursive(tmp_path):
     assert names == ["a.py", "b.txt", "c.py"]
 
 
+def test_scan_folder_skips_common_dirs(tmp_path):
+    (tmp_path / "a.py").write_text("a")
+    for name in ("__pycache__", ".git", ".venv", "node_modules", "build"):
+        d = tmp_path / name
+        d.mkdir()
+        (d / "junk.py").write_text("junk")
+
+    files = scan_folder(tmp_path)
+    names = [p.name for p in files]
+    assert names == ["a.py"]
+
+
 def test_scan_folder_returns_empty_for_file(tmp_path):
     f = tmp_path / "a.py"
     f.write_text("a")
