@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from PyQt6.QtCore import QDir, Qt
+from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtWidgets import (
     QFileDialog,
-    QFileSystemModel,
     QHBoxLayout,
     QLabel,
     QListWidget,
