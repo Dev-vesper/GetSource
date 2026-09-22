@@ -14,7 +14,7 @@ def build_markdown(entries):
     parts = []
     for path, display in entries:
         content = _read_text(Path(path))
-        parts.append(f"```{display}\n{content}\n```")
+        parts.append(f"````{display}\n{content}\n````")
     return "\n\n".join(parts)
 
 
