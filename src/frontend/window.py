@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PyQt6.QtCore import QDir, Qt
+from PyQt6.QtCore import QDir, QThread, Qt, pyqtSignal
 from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -21,6 +21,26 @@ from src.frontend.picker import PickerDialog
 from src.internals.exporter import write_markdown
 
 
+class ExportWorker(QThread):
+    """Background worker that writes the markdown file off the UI thread."""
+
+    done = pyqtSignal(str)
+    failed = pyqtSignal(str)
+
+    def __init__(self, entries, output_path):
+        super().__init__()
+        self.entries = entries
+        self.output_path = output_path
+
+    def run(self):
+        try:
+            write_markdown(self.entries, self.output_path)
+        except Exception as exc:
+            self.failed.emit(str(exc))
+            return
+        self.done.emit(self.output_path)
+
+
 class MainWindow(QMainWindow):
     """Main window: file tree on the left, collected files on the right."""
 
@@ -29,6 +49,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Source Collector")
         self.resize(1050, 680)
         self.selected_files = []
+        self._worker = None
         self._build_ui()
 
     def _build_ui(self):
@@ -71,13 +92,13 @@ class MainWindow(QMainWindow):
         remove_btn.clicked.connect(self.remove_selected)
         clear_btn = QPushButton("Clear")
         clear_btn.clicked.connect(self.clear_all)
-        export_btn = QPushButton("Export Markdown")
-        export_btn.clicked.connect(self.export)
+        self.export_btn = QPushButton("Export Markdown")
+        self.export_btn.clicked.connect(self.export)
         btn_row.addWidget(add_btn)
         btn_row.addWidget(remove_btn)
         btn_row.addWidget(clear_btn)
         btn_row.addStretch()
-        btn_row.addWidget(export_btn)
+        btn_row.addWidget(self.export_btn)
         root.addLayout(btn_row)
 
     def add_folder(self):
@@ -120,7 +141,9 @@ class MainWindow(QMainWindow):
         self.file_list.clear()
 
     def export(self):
-        """Write the collected files to a Markdown file."""
+        """Start a background export of the collected files."""
+        if self._worker is not None:
+            return
         if not self.selected_files:
             QMessageBox.information(self, "Empty", "No files selected.")
             return
@@ -129,5 +152,26 @@ class MainWindow(QMainWindow):
         )
         if not out:
             return
-        write_markdown(self.selected_files, out)
-        QMessageBox.information(self, "Done", f"Saved to:\n{out}")
+
+        self.export_btn.setEnabled(False)
+        self.export_btn.setText("Exporting...")
+
+        self._worker = ExportWorker(list(self.selected_files), out)
+        self._worker.done.connect(self._on_export_done)
+        self._worker.failed.connect(self._on_export_failed)
+        self._worker.finished.connect(self._on_worker_finished)
+        self._worker.start()
+
+    def _on_export_done(self, path):
+        """Notify the user that the file was written."""
+        QMessageBox.information(self, "Done", f"Saved to:\n{path}")
+
+    def _on_export_failed(self, message):
+        """Show an error dialog if the export failed."""
+        QMessageBox.critical(self, "Export failed", message)
+
+    def _on_worker_finished(self):
+        """Restore the export button once the worker is done."""
+        self.export_btn.setEnabled(True)
+        self.export_btn.setText("Export Markdown")
+        self._worker = None
